@@ -19,7 +19,7 @@ pipeline{
                 sshPublisher(
                 publishers: [
                     sshPublisherDesc(
-                        configName: "Ubuntu2",
+                        configName: "server1",
                             transfers: [
                                 sshTransfer(sourceFiles: "*")
                             ]
