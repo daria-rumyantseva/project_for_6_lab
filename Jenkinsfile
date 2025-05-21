@@ -1,34 +1,27 @@
-pipeline {
+pipeline{
     agent any
-    
-    parameters {
-        choice(
-            name: 'ENV',
-            choices: ['dev', 'prod'],
-            description: 'Окружение для деплоя'
-        )
+    parameters{
+        choice(name: 'ENV', choices: ["dev", "prod"], description: 'Среда деплоя:')
     }
-
-    stages {
-        stage('Prepare') {
-            steps {
-                echo "Deploying to ${params.ENV}"
-                cleanWs()
+    stages{
+        stage('Message'){
+            steps{
+               sh 'echo "Deploying to ${ENV}"'
             }
         }
-        
-        stage('Deploy') {
-            steps {
+        stage('Clear Workdir'){
+            steps{
+                sh 'rm -rf *'
+            }
+        }
+        stage('Send files to remote server'){
+            steps{
                 sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'server1',
+                publishers: [
+                    sshPublisherDesc(
+                        configName: "server1",
                             transfers: [
-                                sshTransfer(
-                                    sourceFiles: '**/*',
-                                    remoteDirectory: "/var/www/${params.ENV}",
-                                    execCommand: "sudo systemctl restart ${params.ENV}-app"
-                                )
+                                sshTransfer(sourceFiles: "*")
                             ]
                         )
                     ]
