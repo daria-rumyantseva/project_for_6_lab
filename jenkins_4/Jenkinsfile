@@ -5,48 +5,35 @@ pipeline {
         choice(
             name: 'ENV',
             choices: ['dev', 'prod'],
-            description: 'Выберите окружение для деплоя'
+            description: 'Окружение для деплоя'
         )
     }
 
     stages {
         stage('Prepare') {
             steps {
-                echo "Deploying to ${params.ENV} environment"
-                cleanWs() // Очистка рабочей директории
+                echo "Deploying to ${params.ENV}"
+                cleanWs()
             }
         }
-
-        stage('Copy Files via SSH') {
+        
+        stage('Deploy') {
             steps {
                 sshPublisher(
                     publishers: [
                         sshPublisherDesc(
-                            configName: 'server1', // Название конфигурации SSH
+                            configName: 'server1',
                             transfers: [
                                 sshTransfer(
-                                    sourceFiles: '**/*', // Копируем все файлы
-                                    removePrefix: '', // Не обрезаем пути
-                                    remoteDirectory: "/var/www/${params.ENV}", // Директория на сервере
-                                    execCommand: """
-                                        echo "Restarting service for ${params.ENV}"
-                                        sudo systemctl restart ${params.ENV}-app.service
-                                    """
+                                    sourceFiles: '**/*',
+                                    remoteDirectory: "/var/www/${params.ENV}",
+                                    execCommand: "sudo systemctl restart ${params.ENV}-app"
                                 )
                             ]
                         )
                     ]
                 )
             }
-        }
-    }
-
-    post {
-        success {
-            echo "Successfully deployed to ${params.ENV}"
-        }
-        failure {
-            echo "Failed to deploy to ${params.ENV}"
         }
     }
 }
