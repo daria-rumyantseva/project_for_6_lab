@@ -1,32 +1,52 @@
-pipeline{
+pipeline {
     agent any
-    parameters{
-        choice(name: 'ENV', choices: ["dev", "prod"], description: 'Среда деплоя:')
+    
+    parameters {
+        choice(
+            name: 'ENV',
+            choices: ['dev', 'prod'],
+            description: 'Выберите окружение для деплоя'
+        )
     }
-    stages{
-        stage('Message'){
-            steps{
-               sh 'echo "Deploying to ${ENV}"'
+
+    stages {
+        stage('Prepare') {
+            steps {
+                echo "Deploying to ${params.ENV} environment"
+                cleanWs() // Очистка рабочей директории
             }
         }
-        stage('Clear Workdir'){
-            steps{
-                sh 'rm -rf *'
-            }
-        }
-        stage('Send files to remote server'){
-            steps{
+
+        stage('Copy Files via SSH') {
+            steps {
                 sshPublisher(
-                publishers: [
-                    sshPublisherDesc(
-                        configName: "server1",
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: 'server1', // Название конфигурации SSH
                             transfers: [
-                                sshTransfer(sourceFiles: "*")
+                                sshTransfer(
+                                    sourceFiles: '**/*', // Копируем все файлы
+                                    removePrefix: '', // Не обрезаем пути
+                                    remoteDirectory: "/var/www/${params.ENV}", // Директория на сервере
+                                    execCommand: """
+                                        echo "Restarting service for ${params.ENV}"
+                                        sudo systemctl restart ${params.ENV}-app.service
+                                    """
+                                )
                             ]
                         )
                     ]
                 )
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Successfully deployed to ${params.ENV}"
+        }
+        failure {
+            echo "Failed to deploy to ${params.ENV}"
         }
     }
 }
